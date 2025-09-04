@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>아르바이트 교육 관리 시스템</title>
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.1/firebase-firestore-compat.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+        
+        .header {
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #7c3aed;
+        }
+        
+        .main-content {
+            padding: 2rem 0;
+        }
+        
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: #7c3aed;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #6d28d9;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn-info {
+            background: #0ea5e9;
+            color: white;
+        }
+        
+        .btn-info:hover {
+            background: #0284c7;
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        
+        .jobs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .job-card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+        
+        .job-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .job-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+            color: white;
+        }
+        
+        .job-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .job-hourly-target {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        
+        .job-body {
+            padding: 1.5rem;
+        }
+        
+        .job-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-item {
+            text-align: center;
+            padding: 1rem;
+            background: #f8fafc;
+            border-radius: 0.5rem;
+        }
+        
+        .info-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+        
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .job-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .job-actions .btn {
+            flex: 1;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #1e293b;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+        
+        .file-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .file-upload-area:hover {
+            border-color: #7c3aed;
+            background-color: #faf5ff;
+        }
+        
+        .file-upload-area.dragover {
+            border-color: #7c3aed;
+            background-color: #faf5ff;
+        }
+        
+        .uploaded-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .image-preview {
+            position: relative;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .image-preview img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+        
+        .image-remove {
+            position: absolute;
+            top: 0.25rem;
+            right: 0.25rem;
+            background: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .calculated-info {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 0.375rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            text-align: center;
+        }
+        
+        .calculated-info.cost-info {
+            background: #fef3c7;
+            border-color: #f59e0b;
+        }
+        
+        .calculated-label {
+            font-size: 0.875rem;
+            color: #0369a1;
+            margin-bottom: 0.25rem;
+            font-weight: 600;
+        }
+        
+        .calculated-info.cost-info .calculated-label {
+            color: #92400e;
+        }
+        
+        .calculated-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #0c4a6e;
+        }
+        
+        .calculated-info.cost-info .calculated-value {
+            color: #92400e;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .modal-actions .btn {
+            flex: 1;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 3rem;
+            font-size: 1rem;
+            background: white;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .materials-modal .modal-content {
+            max-width: 800px;
+        }
+        
+        .materials-content {
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .materials-text {
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1.5rem;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+        
+        .materials-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        
+        .materials-image {
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .materials-image img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .materials-image img:hover {
+            transform: scale(1.05);
+        }
+        
+        @media (max-width: 768px) {
+            .jobs-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                margin: 1rem;
+                width: calc(100% - 2rem);
+            }
+            
+            .job-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .job-actions {
+                flex-direction: column;
+            }
+            
+            .uploaded-images {
+                grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            }
+            
+            .materials-images {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">📚 아르바이트 교육 관리 <span id="connection-status" style="font-size: 0.8rem; opacity: 0.7;"></span></div>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">아르바이트 교육 목록</h2>
+                <button class="btn btn-primary" onclick="showJobModal()">+ 아르바이트 추가</button>
+            </div>
+            <div class="jobs-grid" id="jobs-grid">
+                <!-- 동적으로 생성됩니다 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 아르바이트 추가/편집 모달 -->
+    <div id="job-modal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="job-modal-title">아르바이트 추가</h3>
+            <div class="form-group">
+                <label class="form-label">아르바이트 제목</label>
+                <input type="text" id="job-title" class="form-input" placeholder="예: 전단지 배포">
+            </div>
+            <div class="form-group">
+                <label class="form-label">10분당 제작 개수</label>
+                <input type="number" id="job-production-per-10min" class="form-input" placeholder="예: 20 (20개)" min="1" oninput="calculateHourlyTarget()">
+            </div>
+            <div class="calculated-info">
+                <div class="calculated-label">시간당 목표량 (자동계산)</div>
+                <div class="calculated-value" id="calculated-hourly-target">0개</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">아르바이트 비용 (원)</label>
+                <input type="number" id="job-cost" class="form-input" placeholder="예: 10000" min="0" oninput="calculateUnitLaborCost()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">목표량 달성 시 수당 (원)</label>
+                <input type="number" id="job-bonus" class="form-input" placeholder="예: 30" min="0">
+            </div>
+            <div class="calculated-info cost-info">
+                <div class="calculated-label">개당 인건비 (자동계산)</div>
+                <div class="calculated-value" id="calculated-unit-labor-cost">0원</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">교육자료</label>
+                <textarea id="job-materials" class="form-textarea" placeholder="교육 내용이나 자료를 입력하세요"></textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">교육자료 이미지</label>
+                <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('file-input').click()">
+                    <div>📷 클릭하여 이미지 선택 또는 드래그 앤 드롭</div>
+                    <small style="color: #64748b;">JPG, PNG, GIF 파일 지원</small>
+                </div>
+                <input type="file" id="file-input" multiple accept="image/*" style="display: none;">
+                <div class="uploaded-images" id="uploaded-images"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-primary" onclick="saveJob()">저장</button>
+                <button class="btn btn-secondary" onclick="hideJobModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 교육자료 보기 모달 -->
+    <div id="materials-modal" class="modal materials-modal">
+        <div class="modal-content">
+            <h3 class="modal-title" id="materials-modal-title">교육자료</h3>
+            <div class="materials-content" id="materials-content">
+                <!-- 교육자료 내용이 여기에 표시됩니다 -->
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideMaterialsModal()">닫기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAXr7parhL6wQuUzy4MPvVhV6-J53wzcA",
+            authDomain: "pastelmovie-cac7a.firebaseapp.com",
+            databaseURL: "https://pastelmovie-cac7a-default-rtdb.firebaseio.com",
+            projectId: "pastelmovie-cac7a",
+            storageBucket: "pastelmovie-cac7a.firebasestorage.app",
+            messagingSenderId: "543294016464",
+            appId: "1:543294016464:web:47162285ca02d3cfb587d5",
+            measurementId: "G-LK2Q13294B"
+        };
+
+        // 전역 변수
+        let jobs = [];
+        let editingJob = null;
+        let db = null;
+        let isOnline = false;
+        let uploadedImages = [];
+
+        // 로컬 스토리지 관리
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('parttime_jobs', JSON.stringify(jobs));
+                console.log('💾 로컬 저장 완료');
+            } catch (error) {
+                console.error('❌ 로컬 저장 실패:', error);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const savedJobs = localStorage.getItem('parttime_jobs');
+                
+                if (savedJobs) {
+                    jobs = JSON.parse(savedJobs);
+                }
+                
+                console.log(`📱 로컬 데이터 로드: 아르바이트 ${jobs.length}개`);
+                renderJobs();
+            } catch (error) {
+                console.error('❌ 로컬 데이터 로드 실패:', error);
+                jobs = [];
+                renderJobs();
+            }
+        }
+
+        // Firebase 초기화
+        function initializeFirebase() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                
+                db.enablePersistence({ synchronizeTabs: true })
+                    .then(() => {
+                        console.log('🔄 오프라인 모드 활성화');
+                    })
+                    .catch((err) => {
+                        console.log('⚠️ 오프라인 모드 설정 실패:', err.code);
+                    });
+                
+                console.log('🔥 Firebase 초기화 성공');
+                return true;
+            } catch (error) {
+                console.error('❌ Firebase 초기화 실패:', error);
+                return false;
+            }
+        }
+
+        // 유틸리티 함수
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ko-KR').format(amount) + '원';
+        }
+
+        function calculateHourlyTarget() {
+            const productionPer10Min = parseInt(document.getElementById('job-production-per-10min').value) || 0;
+            
+            // 10분당 제작 개수로 시간당 목표량 계산 (10분 x 6 = 60분)
+            const hourlyTarget = productionPer10Min * 6;
+            
+            document.getElementById('calculated-hourly-target').textContent = hourlyTarget + '개';
+            calculateUnitLaborCost();
+            
+            return hourlyTarget;
+        }
+
+        function calculateUnitLaborCost() {
+            const productionPer10Min = parseInt(document.getElementById('job-production-per-10min').value) || 0;
+            const cost = parseInt(document.getElementById('job-cost').value) || 0;
+            
+            let unitLaborCost = 0;
+            if (productionPer10Min > 0 && cost > 0) {
+                const hourlyTarget = productionPer10Min * 6;
+                unitLaborCost = cost / hourlyTarget;
+            }
+            
+            document.getElementById('calculated-unit-labor-cost').textContent = formatCurrency(Math.round(unitLaborCost));
+            
+            return unitLaborCost;
+        }
+
+        // 이미지 처리 함수
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        uploadedImages.push({
+                            name: file.name,
+                            data: e.target.result,
+                            size: file.size
+                        });
+                        displayUploadedImages();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        function displayUploadedImages() {
+            const container = document.getElementById('uploaded-images');
+            container.innerHTML = '';
+            
+            uploadedImages.forEach((image, index) => {
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'image-preview';
+                imageDiv.innerHTML = `
+                    <img src="${image.data}" alt="${image.name}">
+                    <button class="image-remove" onclick="removeImage(${index})">×</button>
+                `;
+                container.appendChild(imageDiv);
+            });
+        }
+
+        function removeImage(index) {
+            uploadedImages.splice(index, 1);
+            displayUploadedImages();
+        }
+
+        // 드래그 앤 드롭 처리
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('file-upload-area');
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                for (let file of files) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            uploadedImages.push({
+                                name: file.name,
+                                data: event.target.result,
+                                size: file.size
+                            });
+                            displayUploadedImages();
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            });
+        }
+
+        // Firebase 데이터 관리
+        async function loadData() {
+            if (!db) {
+                console.log('📱 Firebase 없음 - 로컬 데이터 사용');
+                loadFromLocalStorage();
+                return;
+            }
+            
+            try {
+                console.log('📥 Firebase 데이터 로드 시도...');
+                
+                const timeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('타임아웃')), 5000)
+                );
+                
+                const dataPromise = db.collection('parttime_jobs').get();
+                
+                const jobsSnapshot = await Promise.race([dataPromise, timeout]);
+
+                jobs = jobsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                isOnline = true;
+                saveToLocalStorage();
+                
+                console.log(`✅ Firebase 데이터 로드 완료: 아르바이트 ${jobs.length}개`);
+                renderJobs();
+            } catch (error) {
+                isOnline = false;
+                console.error('❌ Firebase 연결 실패:', error.message);
+                console.log('📱 로컬 데이터로 전환');
+                loadFromLocalStorage();
+            }
+        }
+
+        async function saveJobToFirebase(jobData) {
+            if (editingJob) {
+                const index = jobs.findIndex(j => j.id === editingJob.id);
+                if (index !== -1) {
+                    jobs[index] = { ...editingJob, ...jobData };
+                }
+            } else {
+                const newJob = { id: Date.now().toString(), ...jobData };
+                jobs.push(newJob);
+            }
+            
+            saveToLocalStorage();
+            renderJobs();
+            
+            if (!db) return;
+            
+            try {
+                if (editingJob) {
+                    await db.collection('parttime_jobs').doc(editingJob.id).update(jobData);
+                    console.log('✏️ Firebase 아르바이트 수정:', editingJob.id);
+                } else {
+                    await db.collection('parttime_jobs').add(jobData);
+                    console.log('➕ Firebase 아르바이트 추가');
+                }
+                isOnline = true;
+            } catch (error) {
+                isOnline = false;
+                console.log('⚠️ Firebase 저장 실패 - 로컬에만 저장됨:', error.message);
+            }
+        }
+
+        async function deleteJobFromFirebase(jobId) {
+            jobs = jobs.filter(j => j.id !== jobId);
+            
+            saveToLocalStorage();
+            renderJobs();
+            
+            if (!db) return;
+            
+            try {
+                await db.collection('parttime_jobs').doc(jobId).delete();
+                console.log('🗑️ Firebase 아르바이트 삭제:', jobId);
+                isOnline = true;
+            } catch (error) {
+                isOnline = false;
+                console.log('⚠️ Firebase 삭제 실패 - 로컬에만 삭제됨:', error.message);
+            }
+        }
+
+        // UI 관리
+        function updateConnectionStatus() {
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                if (isOnline && db) {
+                    statusEl.textContent = '🟢 온라인';
+                    statusEl.style.color = '#059669';
+                } else {
+                    statusEl.textContent = '🔴 오프라인';
+                    statusEl.style.color = '#dc2626';
+                }
+            }
+        }
+
+        function renderJobs() {
+            const grid = document.getElementById('jobs-grid');
+            grid.innerHTML = '';
+
+            if (jobs.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1 / -1;">
+                        📚 등록된 아르바이트가 없습니다.<br>
+                        아르바이트를 추가해주세요.
+                    </div>
+                `;
+                return;
+            }
+
+            jobs.forEach(job => {
+                const card = document.createElement('div');
+                card.className = 'job-card';
+                
+                card.innerHTML = `
+                    <div class="job-header">
+                        <div class="job-title">${job.title}</div>
+                        <div class="job-hourly-target">시간당 목표: ${job.target}개</div>
+                    </div>
+                    <div class="job-body">
+                        <div class="job-info">
+                            <div class="info-item">
+                                <div class="info-label">10분당 제작개수</div>
+                                <div class="info-value">${job.productionPer10Min}개</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">시간당 목표량</div>
+                                <div class="info-value">${job.target}개</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">아르바이트 비용</div>
+                                <div class="info-value">${formatCurrency(job.cost)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">개당 인건비</div>
+                                <div class="info-value">${formatCurrency(job.unitLaborCost)}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label" style="grid-column: 1 / -1;">목표달성 시 수당</div>
+                                <div class="info-value" style="grid-column: 1 / -1;">${formatCurrency(job.bonus)}</div>
+                            </div>
+                        </div>
+                        <div class="job-actions">
+                            <button class="btn btn-info" onclick="showMaterials('${job.id}')">교육자료 보기</button>
+                            <button class="btn btn-secondary" onclick="editJob('${job.id}')">편집</button>
+                            <button class="btn btn-danger" onclick="deleteJob('${job.id}')">삭제</button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            
+            updateConnectionStatus();
+        }
+
+        // 교육자료 보기 모달
+        function showMaterials(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            if (!job) return;
+            
+            document.getElementById('materials-modal-title').textContent = `${job.title} - 교육자료`;
+            
+            const content = document.getElementById('materials-content');
+            content.innerHTML = '';
+            
+            // 텍스트 교육자료
+            if (job.materials && job.materials.trim()) {
+                const textDiv = document.createElement('div');
+                textDiv.innerHTML = `
+                    <h4 style="margin-bottom: 1rem; color: #374151;">교육 내용</h4>
+                    <div class="materials-text">${job.materials}</div>
+                `;
+                content.appendChild(textDiv);
+            }
+            
+            // 이미지 교육자료
+            if (job.images && job.images.length > 0) {
+                const imagesDiv = document.createElement('div');
+                imagesDiv.innerHTML = `
+                    <h4 style="margin-bottom: 1rem; color: #374151;">교육 이미지</h4>
+                    <div class="materials-images">
+                        ${job.images.map(image => `
+                            <div class="materials-image">
+                                <img src="${image.data}" alt="${image.name}" onclick="openImageFullscreen('${image.data}')">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                content.appendChild(imagesDiv);
+            }
+            
+            if ((!job.materials || !job.materials.trim()) && (!job.images || job.images.length === 0)) {
+                content.innerHTML = `
+                    <div style="text-align: center; color: #64748b; padding: 2rem;">
+                        📝 등록된 교육자료가 없습니다.
+                    </div>
+                `;
+            }
+            
+            document.getElementById('materials-modal').classList.add('show');
+        }
+
+        function hideMaterialsModal() {
+            document.getElementById('materials-modal').classList.remove('show');
+        }
+
+        function openImageFullscreen(src) {
+            const newWindow = window.open('', '_blank');
+            newWindow.document.write(`
+                <html>
+                    <head><title>교육자료 이미지</title></head>
+                    <body style="margin:0; background:#000; display:flex; justify-content:center; align-items:center; min-height:100vh;">
+                        <img src="${src}" style="max-width:100%; max-height:100%; object-fit:contain;">
+                    </body>
+                </html>
+            `);
+        }
+
+        // 모달 관리
+        function showJobModal(jobId = null) {
+            editingJob = jobId ? jobs.find(j => j.id === jobId) : null;
+            uploadedImages = [];
+            
+            document.getElementById('job-modal-title').textContent = 
+                editingJob ? '아르바이트 편집' : '아르바이트 추가';
+            
+            if (editingJob) {
+                document.getElementById('job-title').value = editingJob.title;
+                document.getElementById('job-production-per-10min').value = editingJob.productionPer10Min;
+                document.getElementById('job-cost').value = editingJob.cost;
+                document.getElementById('job-bonus').value = editingJob.bonus;
+                document.getElementById('job-materials').value = editingJob.materials || '';
+                
+                if (editingJob.images) {
+                    uploadedImages = [...editingJob.images];
+                    displayUploadedImages();
+                }
+                
+                calculateHourlyTarget();
+            } else {
+                document.getElementById('job-title').value = '';
+                document.getElementById('job-production-per-10min').value = '';
+                document.getElementById('job-cost').value = '';
+                document.getElementById('job-bonus').value = '';
+                document.getElementById('job-materials').value = '';
+                document.getElementById('calculated-hourly-target').textContent = '0개';
+                document.getElementById('calculated-unit-labor-cost').textContent = '0원';
+                displayUploadedImages();
+            }
+            
+            document.getElementById('job-modal').classList.add('show');
+        }
+
+        function hideJobModal() {
+            document.getElementById('job-modal').classList.remove('show');
+            editingJob = null;
+            uploadedImages = [];
+        }
+
+        function saveJob() {
+            const title = document.getElementById('job-title').value.trim();
+            const productionPer10Min = parseInt(document.getElementById('job-production-per-10min').value) || 0;
+            const cost = parseInt(document.getElementById('job-cost').value) || 0;
+            const bonus = parseInt(document.getElementById('job-bonus').value) || 0;
+            const materials = document.getElementById('job-materials').value.trim();
+            
+            if (!title) {
+                alert('📝 아르바이트 제목을 입력하세요.');
+                return;
+            }
+            
+            if (productionPer10Min <= 0) {
+                alert('📦 10분당 제작 개수를 올바르게 입력하세요.');
+                return;
+            }
+            
+            if (cost <= 0) {
+                alert('💰 아르바이트 비용을 올바르게 입력하세요.');
+                return;
+            }
+            
+            if (bonus < 0) {
+                alert('💰 목표달성 시 수당을 올바르게 입력하세요.');
+                return;
+            }
+            
+            const target = calculateHourlyTarget();
+            const unitLaborCost = Math.round(calculateUnitLaborCost());
+            
+            const jobData = { 
+                title, 
+                productionPer10Min, 
+                target, 
+                cost, 
+                materials, 
+                bonus, 
+                unitLaborCost,
+                images: uploadedImages 
+            };
+            
+            saveJobToFirebase(jobData);
+            hideJobModal();
+        }
+
+        function editJob(jobId) {
+            showJobModal(jobId);
+        }
+
+        function deleteJob(jobId) {
+            const job = jobs.find(j => j.id === jobId);
+            if (confirm(`❓ '${job.title}' 아르바이트를 삭제하시겠습니까?`)) {
+                deleteJobFromFirebase(jobId);
+            }
+        }
+
+        // 이벤트 리스너
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const openModal = document.querySelector('.modal.show');
+                if (openModal) {
+                    openModal.classList.remove('show');
+                    if (openModal.id === 'job-modal') {
+                        editingJob = null;
+                        uploadedImages = [];
+                    }
+                }
+            }
+        });
+
+        // 앱 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 아르바이트 교육 관리 시스템 시작');
+            
+            loadFromLocalStorage();
+            
+            const firebaseInitialized = initializeFirebase();
+            
+            if (firebaseInitialized) {
+                console.log('🔄 Firebase 연결 시도...');
+                loadData();
+            } else {
+                console.log('📱 로컬 모드로만 실행');
+                isOnline = false;
+                updateConnectionStatus();
+            }
+            
+            // 파일 업로드 이벤트 리스너
+            document.getElementById('file-input').addEventListener('change', handleFileSelect);
+            setupDragAndDrop();
+            
+            setInterval(() => {
+                if (!isOnline && db) {
+                    console.log('🔄 Firebase 재연결 시도...');
+                    loadData();
+                }
+            }, 30000);
+        });
+    </script>
+</body>
+</html>
